@@ -21,23 +21,32 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Accept Android SDK licenses
+        run: |
+          yes | sdkmanager --licenses || true
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
       - name: Unpack project ZIP
         run: |
           unzip -o DOR_Floating_Helper_Source.zip -d project
-          echo "PROJECT_DIR=$(find project -name settings.gradle -type f -printf '%h\n' | head -n 1)" >> "$GITHUB_ENV"
+          find project -type f -name settings.gradle -o -name settings.gradle.kts
 
       - name: Build APK
         run: |
-          cd "$PROJECT_DIR"
-          chmod +x gradlew 2>/dev/null || true
-          if [ -f gradlew ]; then
-            ./gradlew assembleDebug
-          else
-            gradle assembleDebug
+          cd project
+          PROJECT_DIR="$(find . -name settings.gradle -type f -printf '%h\n' | head -n 1)"
+          if [ -z "$PROJECT_DIR" ]; then
+            PROJECT_DIR="$(find . -name settings.gradle.kts -type f -printf '%h\n' | head -n 1)"
           fi
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "Не найден файл settings.gradle в ZIP"
+            find . -maxdepth 3 -type f
+            exit 1
+          fi
+          cd "$PROJECT_DIR"
+          gradle assembleDebug
 
       - name: Save APK
         uses: actions/upload-artifact@v4
@@ -45,4 +54,3 @@ jobs:
           name: DOR-APK
           path: project/**/build/outputs/apk/debug/*.apk
           if-no-files-found: error
-          
