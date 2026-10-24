@@ -29,10 +29,12 @@ jobs:
 
       - name: Unpack project ZIP
         run: |
-          run: |
-          ls -la
-          find . -name "DOR_Floating_Helper.zip"
-          find project -type f -name settings.gradle -o -name settings.gradle.kts
+          
+      - name: Unzip source
+        run: |
+          unzip -o DOR_Floating_Helper.zip -d project
+          find project -name settings.gradle -o -name settings.gradle.kts
+
 
       - name: Build APK
         run: |
