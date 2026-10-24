@@ -1,1 +1,48 @@
 
+name: Build DOR APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download source
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Unpack project ZIP
+        run: |
+          unzip -o DOR_Floating_Helper_Source.zip -d project
+          echo "PROJECT_DIR=$(find project -name settings.gradle -type f -printf '%h\n' | head -n 1)" >> "$GITHUB_ENV"
+
+      - name: Build APK
+        run: |
+          cd "$PROJECT_DIR"
+          chmod +x gradlew 2>/dev/null || true
+          if [ -f gradlew ]; then
+            ./gradlew assembleDebug
+          else
+            gradle assembleDebug
+          fi
+
+      - name: Save APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DOR-APK
+          path: project/**/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          
